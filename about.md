@@ -4,3 +4,5 @@
 - citanje
 - trcanje
 - filmovi
+- druzenje
+- planinarenje
