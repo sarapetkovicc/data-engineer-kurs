@@ -11,3 +11,4 @@ Tokom ovog kursa volela bih da naucim:
 - databricks
 - github
 - sql
+- python
