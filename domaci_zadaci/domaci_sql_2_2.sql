@@ -48,8 +48,8 @@ where first_goal_scorer like 'A%' or first_goal_scorer like '%-%'
 -- Osmi zadatak: Prikažite utakmice sezone `2024/25` koje su počele između 18:00 i 21:00, uključujući obe granice. Prikažite vreme početka i nazive timova.
 select match_id, home_team, away_team, hour(kickoff_ts)
 from bootcamp.northern_star.matches_flat 
-where hour(kickoff_ts) between 18 and 21
--- Ima 39 utakmica
+where hour(kickoff_ts) between 18 and 21 and season = '2024/25'
+-- Ima 12 utakmica
 
 -- Deveti zadatak: Prebrojte utakmice odigrane u martu, aprilu ili maju 2025. godine čiji naslov sadrži reč `win`, bez obzira na veličinu slova.
 select match_id, month(kickoff_ts), year(kickoff_ts), match_report
