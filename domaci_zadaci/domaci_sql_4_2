@@ -1,0 +1,169 @@
+-- Domaci 4.2
+
+-- Prvi zadatak
+with club as (
+    select team_id
+    from teams
+    where team_name = 'Northport United'
+),
+rezultati as (
+    select m.match_id,
+    case when c.team_id = m.home_team_id then m.home_goals
+    else m.away_goals end as dati,
+    case when c.team_id = m.home_team_id then m.away_goals
+    else m.home_goals end as primljeni,
+    case when (c.team_id = m.home_team_id and m.home_goals > m.away_goals) or (c.team_id = m.away_team_id and m.away_goals > m.home_goals) then 3
+    when (c.team_id = m.home_team_id and m.home_goals = m.away_goals) or (c.team_id = m.away_team_id and m.away_goals = m.home_goals) then 1
+    else 0 end as bodovi
+    from matches m join club c
+    on m.home_team_id = c.team_id  or m.away_team_id = c.team_id
+    where m.season = '2024/25'
+)
+select count(*) as utakmice, sum(case when dati > primljeni then 1 else 0 end) pobeda,
+sum (case when primljeni > dati then 1 else 0 end) gubitak,
+sum(case when dati = primljeni  then 1 else 0 end) nereseno,
+sum(dati) dati,
+sum(primljeni) primljeni,
+sum(bodovi) as bodovi
+from rezultati
+
+-- Drugi zadatak
+with club as (
+    select team_id
+    from teams
+    where team_name = 'Northport United'
+),
+rezultati as (
+    select 'kod kuce' as teren,
+    case when c.team_id = m.home_team_id then m.home_goals
+    else m.away_goals end as dati,
+    case when c.team_id = m.home_team_id then m.away_goals
+    else m.home_goals end as primljeni,
+    case when c.team_id = m.home_team_id and m.home_goals > m.away_goals then 3
+    when c.team_id = m.home_team_id and m.home_goals = m.away_goals then 1
+    else 0 end as bodovi
+    from matches m join club c
+    on m.home_team_id = c.team_id 
+    where m.season = '2024/25'
+
+    union all
+
+    select 'gost' as teren,
+    case when c.team_id = m.away_team_id then m.away_goals
+    else m.home_goals end as dati,
+    case when c.team_id = m.away_team_id then m.home_goals
+    else m.away_goals end as primljeni,
+    case when c.team_id = m.away_team_id and m.away_goals > m.home_goals then 3
+    when c.team_id = m.away_team_id and m.away_goals = m.home_goals then 1
+    else 0 end as bodovi
+    from matches m join club c
+    on m.away_team_id = c.team_id 
+    where m.season = '2024/25'
+
+
+)
+select teren, count(*) as utakmice, sum(case when dati > primljeni then 1 else 0 end) pobeda,
+sum (case when primljeni > dati then 1 else 0 end) gubitak,
+sum(case when dati = primljeni  then 1 else 0 end) nereseno,
+sum(dati) dati,
+sum(primljeni) primljeni,
+sum(bodovi) as bodovi
+from rezultati
+group by teren
+
+
+-- Treci zadatak
+with club as (
+    select team_id
+    from teams
+    where team_name = 'Northport United'
+)
+select p.first_name, p.last_name, sum(case when p.player_id = me.player_id then 1 else 0 end ) golovi, sum(case when p.player_id = me.related_player_id then 1 else 0 end ) golovi_asist
+from match_events me join matches m on me.match_id = m.match_id
+join players p on p.player_id = me.player_id or p.player_id = me.related_player_id
+where me.team_id in (select c.team_id from club c) and me.event_type in ('goal', 'penalty_goal')
+and m.season = '2024/25'
+group by p.first_name, p.last_name
+order by golovi desc
+
+-- Cetvrti zadatak
+
+with club as (
+    select team_id
+    from teams
+    where team_name = 'Northport United'
+),
+prosek_lige as (
+    select (sum(case when me.event_type in ('yellow_card', 'second_yellow', 'red_card') then 1 else 0 end) * 1.0/count(distinct m.match_id) * 2.0 ) as prosek_kartona
+    from matches m join match_events me on m.match_id=me.match_id
+    where m.season = '2024/25'
+)
+select sum(case when me.team_id=c.team_id and me.event_type in ('yellow_card', 'second_yellow', 'red_card') then 1 else 0 end) * 1.0/count(distinct m.match_id) as prosek_kartona,
+max(p1.prosek_kartona) as prosek_lige
+from matches m join club c on m.home_team_id=c.team_id or m.away_team_id=c.team_id
+left join match_events me on m.match_id=me.match_id
+cross join prosek_lige p1
+where m.season = '2024/25'
+
+-- Peti zadatak
+with club as (
+    select team_id
+    from teams
+    where team_name = 'Northport United'
+)
+select ms.manager_name,
+count(distinct m.match_id) utalkmice,
+sum(case when (m.home_team_id = c.team_id and m.home_goals > m.away_goals) or (m.away_team_id = c.team_id and m.away_goals > m.home_goals) then 3
+when m.home_goals = m.away_goals then 1 else 0 end) as bodovi,
+avg(case when (m.home_team_id = c.team_id and m.home_goals > m.away_goals) or (m.away_team_id = c.team_id and m.away_goals > m.home_goals) then 3
+when m.home_goals = m.away_goals then 1 else 0 end) bodovi_utakmice
+from manager_spells ms join club c on ms.team_id = c.team_id
+join matches m on ms.team_id = m.home_team_id or ms.team_id = m.away_team_id
+where m.season = '2024/25' and m.status = 'played'
+group by ms.spell_id, ms.manager_name
+
+-- Sesti zadatak
+with club as (
+    select team_id
+    from teams
+    where team_name = 'Northport United'
+)
+select m.kickoff_ts, t1.team_name domacin, t2.team_name gost, m.home_goals, m.away_goals
+from matches m join teams t1 on m.home_team_id = t1.team_id
+join teams t2 on m.away_team_id = t2.team_id
+join club c on m.home_team_id = c.team_id or m.away_team_id = c.team_id
+where m.season = '2024/25' and m.status = 'played' 
+and ((m.home_team_id = c.team_id and m.home_goals > m.away_goals) or (m.away_team_id = c.team_id and m.away_goals > m.home_goals))
+order by abs(m.home_goals - m.away_goals) desc
+limit 2
+
+with club as (
+    select team_id
+    from teams
+    where team_name = 'Northport United'
+)
+select m.kickoff_ts, t1.team_name domacin, t2.team_name gost, m.home_goals, m.away_goals
+from matches m join teams t1 on m.home_team_id = t1.team_id
+join teams t2 on m.away_team_id = t2.team_id
+join club c on m.home_team_id = c.team_id or m.away_team_id = c.team_id
+where m.season = '2024/25' and m.status = 'played' 
+and ((m.home_team_id = c.team_id and m.home_goals < m.away_goals) or (m.away_team_id = c.team_id and m.away_goals < m.home_goals))
+order by abs(m.home_goals - m.away_goals) desc
+limit 2
+
+
+
+-- Sedmi zadatak
+with club as (
+    select team_id
+    from teams
+    where team_name = 'Northport United'
+)
+select avg(m.attendance) as prosek, avg(m.attendance * 100 / s.capacity) as procenat_popunjenost,
+count(case when m.attendance is null then 1 end ) bez_podataka
+from matches m join club c on m.home_team_id = c.team_id or m.away_team_id = c.team_id
+join stadiums s on m.stadium_id = s.stadium_id
+where m.season = '2024/25' and m.status = 'played'
+-- Prosek je 33833.7, procenat popunjenosti 84.5 i bez podataka 1
+
+
